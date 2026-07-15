@@ -1,0 +1,92 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>世界見るだけ</title>
+<style>
+    body{background:#111;color:#fff;font-family:sans-serif;text-align:center;margin:10px;}
+    .c{display:flex;justify-content:center;gap:15px;max-width:900px;margin:auto;}
+    canvas{background:#1f1f1f;border:2px solid #555;}
+    .s{flex:1;background:#222;padding:10px;text-align:left;font-size:12px;display:flex;flex-direction:column;height:480px;}
+    .b{background:#333;padding:8px;text-align:center;font-size:15px;font-weight:bold;margin-bottom:10px;border:1px solid #555;}
+    .l{flex:1;background:#000;overflow-y:auto;padding:5px;font-family:monospace;margin:10px 0;line-height:1.4;}
+    button{color:#fff;background:#555;border:0;padding:10px;cursor:pointer;font-weight:bold;width:100%;}
+</style></head><body>
+<h2>🌍 世界シミュレーター</h2>
+<div class="c">
+    <canvas id="cv" width="480" height="480"></canvas>
+    <div class="s">
+        <div id="sd" class="b">⏳ 季節解禁まで: 10秒</div>
+        <b>⚔️ 戦況ログ:</b><div class="l" id="lc"></div>
+        <button onclick="init()">世界リセット</button>
+    </div>
+</div>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),lc=document.getElementById('lc'),sd=document.getElementById('sd');
+const S=40, CS=cv.width/S, ot=[1,3,4];
+const nt={
+    1:{n:"赤国",c:"rgb(255,50,50)"}, 2:{n:"青国",c:"rgb(50,150,255)"},
+    3:{n:"緑国",c:"rgb(50,200,100)"}, 4:{n:"黄国",c:"rgb(255,200,50)"},
+    5:{n:"ダグーン",c:"rgb(255,255,255)",dg:1}
+};
+let w=[], it=300, un=0, se=0, st=0;
+const ss=[
+    {n:"春 🌸 (緑強化)",c:"#2d5a27",t:"#2ecc71"}, {n:"夏 ☀️ (赤微強化)",c:"#7a241e",t:"#ff4d4d"},
+    {n:"秋 🍁 (黄強化)",c:"#6e5017",t:"#f1c40f"}, {n:"冬 ❄️ (青強化)",c:"#1d3b5c",t:"#3399ff"}
+];
+function log(t,c="#fff"){const e=document.createElement('div');e.style.color=c;e.innerHTML="• "+t;lc.appendChild(e);lc.scrollTop=lc.scrollHeight;}
+function init(){
+    w=Array(S).fill(0).map(()=>Array(S).fill(0));it=300;un=0;se=0;st=0;
+    sd.innerText="⏳ 季節解禁まで: 10秒";sd.style.backgroundColor="#333";lc.innerHTML="";
+    log("世界生成。10秒後に春からスタート。","#0ff");
+    let sx={}, sy={};
+    for(let i=0;i<ot.length;i++){
+        let id=ot[i],x,y;do{x=Math.floor(Math.random()*(S-6))+3;y=Math.floor(Math.random()*(S-6))+3;}while(w[y][x]);
+        sx[id]=x;sy[id]=y;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)w[y+dy][x+dx]=id;
+    }
+    let bx,by,ok=0,at=0;
+    while(!ok&&at<1000){
+        bx=Math.floor(Math.random()*(S-6))+3;by=Math.floor(Math.random()*(S-6))+3;at++;
+        if(w[by][bx])continue;
+        let c=1;for(let i=0;i<ot.length;i++){let id=ot[i];if(Math.sqrt((bx-sx[id])**2+(by-sy[id])**2)<18)c=0;}
+        if(c)ok=1;
+    }
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)w[by+dy][bx+dx]=2;
+}
+function summon(){
+    let x,y;do{x=Math.floor(Math.random()*(S-8))+4;y=Math.floor(Math.random()*(S-8))+4;}while(w[y][x]==5);
+    sk(x,y,2,5);log("🚨 白き神の国、ダグーン国が降臨！","#fff");
+}
+window.addEventListener('keydown',e=>{if(e.key=='d'||e.key=='D')summon();});
+function sk(cx,cy,r,m){
+    for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+        let nx=cx+dx,ny=cy+dy;if(nx>=0&&nx<S&&ny>=0&&ny<S)w[ny][nx]=m;
+    }
+}
+function loop(){
+    if(!un){
+        it--;sd.innerText=`⏳ 季節解禁まで: ${Math.max(0,Math.ceil(it/30))}秒`;
+        if(it<=0){un=1;sd.innerText=`現在の季節: ${ss[se].n}`;sd.style.backgroundColor=ss[se].c;log("🌍 四季がもたらされました！","#ffcc00");}
+    }else{
+        st++;if(st>=600){st=0;se=(se+1)%4;sd.innerText=`現在の季節: ${ss[se].n}`;sd.style.backgroundColor=ss[se].c;log(`🌍 季節が【${ss[se].n}】に移り変わりました。`,ss[se].t);}
+    }
+    let bc=0.05,rc=0.003,yc=0.003,gc=0.03;
+    if(un){if(se==3)bc=0.2;if(se==1)rc=0.006;if(se==2)yc=0.015;if(se==0)gc=0.15;}
+    for(let i=0;i<300;i++){
+        let x=Math.floor(Math.random()*S),y=Math.floor(Math.random()*S),id=w[y][x];
+        if(!id)continue;
+        let r=Math.floor(Math.random()*4),nx=x+(r==2?-1:r==3?1:0),ny=y+(r==0?-1:r==1?1:0);
+        if(nx>=0&&nx<S&&ny>=0&&ny<S){
+            let tid=w[ny][nx];
+            if(!tid)w[ny][nx]=id;
+            else if(tid!=id&&Math.random()<((id==5||id==2)?0.16:0.22)){
+                if(nt[tid].dg&&Math.random()<0.05){log("💥【ダグーンの小呪い】周囲消滅。","#aaa");sk(nx,ny,1,0);}
+                else if(tid==2&&Math.random()<bc){if(Math.random()<0.05)log("❄️【絶対零度】青国が防御！","#3399ff");w[ny][nx]=2;}
+                else{w[ny][nx]=id;if(id==1&&Math.random()<rc){log(`☄️【メテオ】赤国の隕石直撃！`,"#ff4d4d");sk(nx,ny,2,1);}if(id==4&&Math.random()<yc){log(`💰【買収】黄国が買収！`,"#f1c40f");sk(nx,ny,2,4);}}
+            }
+        }
+    }
+    let gct=0;for(let y=0;y<S;y++)for(let x=0;x<S;x++)if(w[y][x]==3)gct++;
+    if(gct>0&&gct<8&&Math.random()<gc){sk(Math.floor(Math.random()*(S-6))+3,Math.floor(Math.random()*(S-6))+3,2,3);log("🌳【超大樹】緑国が復活！","#2ecc71")}
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++)if(w[y][x]){ctx.fillStyle=nt[w[y][x]].c;ctx.fillRect(x*CS,y*CS,CS-0.5,CS-0.5);if(nt[w[y][x]].dg){ctx.strokeStyle="#666";ctx.strokeRect(x*CS,y*CS,CS-0.5,CS-0.5);}}
+    requestAnimationFrame(loop);
+}
+init();loop();
+</script></body></html>
